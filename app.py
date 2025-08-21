@@ -5,4 +5,4 @@ st.title("App")
 
 st.header("Hola")
 st.write("Mundo")
-image = Image.open(`ìmagen.png`)
+image = Image.open(`ìmagen.jpg`)
