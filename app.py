@@ -1,68 +1,147 @@
-import streamlit as st
 import os
-import time
 import glob
-import os
+import time
+from datetime import datetime
+
+import streamlit as st
 from gtts import gTTS
 from PIL import Image
 
-st.title("Interfases Multimodales.")
-image = Image.open('imagen.jpg')
+# ─────────────────────────── Config ─────────────────────────── #
+st.set_page_config(page_title="Interfases Multimodales: Texto → Audio", page_icon="🎧", layout="wide")
 
-st.image(image, width=200)
+# Estilos ligeros
+st.markdown("""
+<style>
+:root {
+  --panel: #ffffff; --text: #111; --muted:#667085; --brand:#7c5cff;
+}
+[data-testid="stAppViewContainer"] > .main { background: #f7f8fb; }
+section[data-testid="stSidebar"] { background: var(--panel); }
+h1,h2,h3,h4,h5 { letter-spacing: .2px; }
+.badge { display:inline-block; padding:.25rem .6rem; border-radius:999px;
+         font-size:.8rem; color:var(--muted); border:1px solid #e4e7ec; }
+.stButton > button { background: var(--brand) !important; color:#fff !important; border:none; border-radius:10px; }
+.card { background:var(--panel); border:1px solid #e4e7ec; border-radius:16px; padding:16px; }
+</style>
+""", unsafe_allow_html=True)
 
+# ─────────────────────────── Header ─────────────────────────── #
+c1, c2 = st.columns([1, 2])
+with c1:
+    if os.path.exists("imagen.jpg"):
+        st.image(Image.open("imagen.jpg"), width=220, caption="Interfases Multimodales")
+with c2:
+    st.title("Interfases Multimodales · Texto → Audio")
+    st.markdown('<span class="badge">Accesible</span> <span class="badge">Rápido</span> <span class="badge">Offline TTS (gTTS)</span>', unsafe_allow_html=True)
 
-try:
-    os.mkdir("temp")
-except:
-    pass
+st.markdown("""
+Las interfaces **texto a audio** favorecen accesibilidad (p. ej., usuarios con baja visión), manos libres y casos
+donde leer no es posible. Aquí puedes escribir un texto, elegir idioma/acento y obtener un **MP3**.
+""")
 
-st.subheader("Texto a audio.")
-st.write('Las interfaces de texto a audio son fundamentales en las interfaces multimodales ya que permiten '  
-         'una comunicación más accesible y natural, facilitando la inclusión de personas con discapacidades ' 
-         ' visuales y permitiendo la interacción en situaciones donde no es posible leer texto. Estas interfaces '  
-         ' también impulsan tecnologías emergentes como los asistentes de voz inteligentes, haciendo que la tecnología ' 
-         ' sea más accesible e intuitiva para todos los usuarios')
-           
+# ─────────────────────────── Sidebar ─────────────────────────── #
+with st.sidebar:
+    st.header("Ajustes")
 
-text = st.text_input("Ingrese el texto.")
+    LANG_MAP = {
+        "Español": "es",
+        "Inglés": "en",
+        "Portugués": "pt",
+        "Francés": "fr",
+        "Italiano": "it",
+        "Alemán": "de",
+        "Japonés": "ja",
+    }
+    lang_label = st.selectbox("Idioma del audio (TTS)", list(LANG_MAP.keys()), index=0)
+    lang_code = LANG_MAP[lang_label]
 
-tld="es"
+    TLD_MAP = {
+        "Default": "com",
+        "Estados Unidos": "com",
+        "Reino Unido": "co.uk",
+        "India": "co.in",
+        "Canadá": "ca",
+        "Australia": "com.au",
+        "Irlanda": "ie",
+        "Sudáfrica": "co.za",
+    }
+    tld_label = st.selectbox("Acento (TLD)", list(TLD_MAP.keys()), index=0)
+    tld = TLD_MAP[tld_label]
 
-def text_to_speech(text, tld):
-    
-    tts = gTTS(text,"es", tld, slow=False)
-    try:
-        my_file_name = text[0:20]
-    except:
-        my_file_name = "audio"
-    tts.save(f"temp/{my_file_name}.mp3")
-    return my_file_name, text
+    slow = st.toggle("Voz lenta", value=False)
 
+# ─────────────────────────── Utilidades ─────────────────────────── #
+TEMP_DIR = "temp"
+os.makedirs(TEMP_DIR, exist_ok=True)
 
-#display_output_text = st.checkbox("Verifica el texto")
-
-if st.button("convertir"):
-    result, output_text = text_to_speech(text, tld)
-    audio_file = open(f"temp/{result}.mp3", "rb")
-    audio_bytes = audio_file.read()
-    st.markdown(f"## Tú audio:")
-    st.audio(audio_bytes, format="audio/mp3", start_time=0)
-
-    #if display_output_text:
-    st.markdown(f"## Texto en audio:")
-    st.write(f" {output_text}")
-
-
-def remove_files(n):
-    mp3_files = glob.glob("temp/*mp3")
-    if len(mp3_files) != 0:
-        now = time.time()
-        n_days = n * 86400
-        for f in mp3_files:
-            if os.stat(f).st_mtime < now - n_days:
+def remove_old_files(days: int = 7):
+    now = time.time()
+    for f in glob.glob(os.path.join(TEMP_DIR, "*.mp3")):
+        try:
+            if os.stat(f).st_mtime < now - days * 86400:
                 os.remove(f)
-                print("Deleted ", f)
+        except Exception:
+            pass
 
+remove_old_files()
 
-remove_files(7)
+def safe_stub(text: str, max_len: int = 36) -> str:
+    if not text.strip():
+        return "audio"
+    stub = "".join(c for c in text.strip().split("\n")[0] if c.isalnum() or c in (" ", "-", "_")).strip()
+    if not stub:
+        stub = "audio"
+    return stub[:max_len].replace(" ", "_")
+
+def text_to_speech(text: str, lang: str, tld: str, slow: bool) -> str:
+    tts = gTTS(text=text, lang=lang, tld=tld, slow=slow)
+    filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{safe_stub(text)}.mp3"
+    path = os.path.join(TEMP_DIR, filename)
+    tts.save(path)
+    return path
+
+# ─────────────────────────── Form principal ─────────────────────────── #
+st.subheader("Texto a audio")
+with st.container():
+    default = "Hola, este es un ejemplo de síntesis de voz con gTTS en Streamlit."
+    colA, colB = st.columns([3, 1])
+    with colA:
+        text = st.text_area("Ingresa el texto", value="", height=180, placeholder=default)
+        st.caption(f"Caracteres: {len(text)}")
+    with colB:
+        if st.button("Usar texto de ejemplo"):
+            text = default
+            st.session_state["__tmp_text"] = default
+        # si el usuario pulsó ejemplo, refrescamos el textarea
+        if "__tmp_text" in st.session_state:
+            if st.session_state["__tmp_text"] and not text:
+                text = st.session_state["__tmp_text"]
+
+    convert = st.button("Convertir a MP3", type="primary", use_container_width=True)
+
+    if convert:
+        if not text or not text.strip():
+            st.error("Escribe algún texto antes de convertir.")
+        elif len(text) > 5000:
+            st.error("El texto es muy largo (máx. 5000 caracteres para gTTS).")
+        else:
+            with st.spinner("Generando audio..."):
+                try:
+                    mp3_path = text_to_speech(text.strip(), lang_code, tld, slow)
+                except Exception as e:
+                    st.error(f"Error al generar el audio: {e}")
+                else:
+                    st.success("¡Listo! Tu audio está abajo.")
+                    with open(mp3_path, "rb") as f:
+                        audio_bytes = f.read()
+                    st.audio(audio_bytes, format="audio/mp3")
+                    st.download_button(
+                        "Descargar MP3",
+                        data=audio_bytes,
+                        file_name=os.path.basename(mp3_path),
+                        mime="audio/mpeg",
+                        use_container_width=True,
+                    )
+                    with st.expander("Texto utilizado"):
+                        st.write(text)
