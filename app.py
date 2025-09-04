@@ -13,16 +13,18 @@ st.set_page_config(page_title="Interfases Multimodales: Texto → Audio", page_i
 # Estilos ligeros
 st.markdown("""
 <style>
-:root {
-  --panel: #ffffff; --text: #111; --muted:#667085; --brand:#7c5cff;
+/* ancho centrado y consistente */
+.block-container { max-width: 1100px; margin: 0 auto; }
+
+/* botones: misma altura/padding/borde */
+.stButton > button {
+  height: 44px !important;
+  padding: 0 16px !important;
+  border-radius: 10px !important;
 }
-[data-testid="stAppViewContainer"] > .main { background: #f7f8fb; }
-section[data-testid="stSidebar"] { background: var(--panel); }
-h1,h2,h3,h4,h5 { letter-spacing: .2px; }
-.badge { display:inline-block; padding:.25rem .6rem; border-radius:999px;
-         font-size:.8rem; color:var(--muted); border:1px solid #e4e7ec; }
-.stButton > button { background: var(--brand) !important; color:#fff !important; border:none; border-radius:10px; }
-.card { background:var(--panel); border:1px solid #e4e7ec; border-radius:16px; padding:16px; }
+
+/* textarea más limpio */
+.stTextArea textarea { border-radius: 12px; }
 </style>
 """, unsafe_allow_html=True)
 
