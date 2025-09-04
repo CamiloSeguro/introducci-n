@@ -10,20 +10,17 @@ from PIL import Image
 # ─────────────────────────── Config ─────────────────────────── #
 st.set_page_config(page_title="Interfases Multimodales: Texto → Audio", page_icon="🎧", layout="wide")
 
-# Estilos ligeros
+# Estilos
 st.markdown("""
 <style>
-/* ancho centrado y consistente */
 .block-container { max-width: 1100px; margin: 0 auto; }
 
-/* botones: misma altura/padding/borde */
 .stButton > button {
   height: 44px !important;
   padding: 0 16px !important;
   border-radius: 10px !important;
 }
 
-/* textarea más limpio */
 .stTextArea textarea { border-radius: 12px; }
 </style>
 """, unsafe_allow_html=True)
@@ -32,15 +29,10 @@ st.markdown("""
 c1, c2 = st.columns([1, 2])
 with c1:
     if os.path.exists("imagen.jpg"):
-        st.image(Image.open("imagen.jpg"), width=220, caption="Interfases Multimodales")
+        st.image(Image.open("imagen.jpg"), width=200, caption="Interfases Multimodales")
 with c2:
     st.title("Interfases Multimodales · Texto → Audio")
-    st.markdown('<span class="badge">Accesible</span> <span class="badge">Rápido</span> <span class="badge">Offline TTS (gTTS)</span>', unsafe_allow_html=True)
-
-st.markdown("""
-Las interfaces **texto a audio** favorecen accesibilidad (p. ej., usuarios con baja visión), manos libres y casos
-donde leer no es posible. Aquí puedes escribir un texto, elegir idioma/acento y obtener un **MP3**.
-""")
+    st.markdown("Las interfaces **texto a audio** favorecen accesibilidad (usuarios con baja visión), manos libres y casos donde leer no es posible.")
 
 # ─────────────────────────── Sidebar ─────────────────────────── #
 with st.sidebar:
@@ -73,7 +65,7 @@ with st.sidebar:
 
     slow = st.toggle("Voz lenta", value=False)
 
-# ─────────────────────────── Utilidades ─────────────────────────── #
+# ─────────────────────────── Utils ─────────────────────────── #
 TEMP_DIR = "temp"
 os.makedirs(TEMP_DIR, exist_ok=True)
 
@@ -108,14 +100,13 @@ st.subheader("Texto a audio")
 
 default = "Hola, este es un ejemplo de síntesis de voz con gTTS en Streamlit."
 
-# Fila de encabezado: título del campo + botón a la derecha
+# Fila de título + botón ejemplo a la derecha
 hdr_l, hdr_r = st.columns([3, 1])
 with hdr_l:
     st.markdown("**Ingresa el texto**")
 with hdr_r:
     use_sample = st.button("Usar texto de ejemplo", use_container_width=True)
 
-# Textarea con etiqueta colapsada para no duplicar el título
 text = st.text_area(
     label="Ingresa el texto",
     value=(default if use_sample else ""),
@@ -126,32 +117,28 @@ text = st.text_area(
 
 st.caption(f"Caracteres: {len(text)}")
 
-# Botón principal a todo el ancho, misma altura por CSS
+# Botón principal centrado y simétrico
 convert = st.button("Convertir a MP3", type="primary", use_container_width=True)
 
-
-    if convert:
-        if not text or not text.strip():
-            st.error("Escribe algún texto antes de convertir.")
-        elif len(text) > 5000:
-            st.error("El texto es muy largo (máx. 5000 caracteres para gTTS).")
-        else:
-            with st.spinner("Generando audio..."):
-                try:
-                    mp3_path = text_to_speech(text.strip(), lang_code, tld, slow)
-                except Exception as e:
-                    st.error(f"Error al generar el audio: {e}")
-                else:
-                    st.success("¡Listo! Tu audio está abajo.")
-                    with open(mp3_path, "rb") as f:
-                        audio_bytes = f.read()
-                    st.audio(audio_bytes, format="audio/mp3")
-                    st.download_button(
-                        "Descargar MP3",
-                        data=audio_bytes,
-                        file_name=os.path.basename(mp3_path),
-                        mime="audio/mpeg",
-                        use_container_width=True,
-                    )
-                    with st.expander("Texto utilizado"):
-                        st.write(text)
+if convert:
+    if not text or not text.strip():
+        st.error("Escribe algún texto antes de convertir.")
+    elif len(text) > 5000:
+        st.error("El texto es muy largo (máx. 5000 caracteres para gTTS).")
+    else:
+        with st.spinner("Generando audio..."):
+            try:
+                mp3_path = text_to_speech(text.strip(), lang_code, tld, slow)
+                with open(mp3_path, "rb") as f:
+                    audio_bytes = f.read()
+                st.success("¡Listo! Aquí está tu audio:")
+                st.audio(audio_bytes, format="audio/mp3")
+                st.download_button(
+                    "Descargar MP3",
+                    data=audio_bytes,
+                    file_name=os.path.basename(mp3_path),
+                    mime="audio/mpeg",
+                    use_container_width=True,
+                )
+            except Exception as e:
+                st.error(f"Error al generar el audio: {e}")
