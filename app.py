@@ -105,22 +105,30 @@ def text_to_speech(text: str, lang: str, tld: str, slow: bool) -> str:
 
 # ─────────────────────────── Form principal ─────────────────────────── #
 st.subheader("Texto a audio")
-with st.container():
-    default = "Hola, este es un ejemplo de síntesis de voz con gTTS en Streamlit."
-    colA, colB = st.columns([3, 1])
-    with colA:
-        text = st.text_area("Ingresa el texto", value="", height=180, placeholder=default)
-        st.caption(f"Caracteres: {len(text)}")
-    with colB:
-        if st.button("Usar texto de ejemplo"):
-            text = default
-            st.session_state["__tmp_text"] = default
-        # si el usuario pulsó ejemplo, refrescamos el textarea
-        if "__tmp_text" in st.session_state:
-            if st.session_state["__tmp_text"] and not text:
-                text = st.session_state["__tmp_text"]
 
-    convert = st.button("Convertir a MP3", type="primary", use_container_width=True)
+default = "Hola, este es un ejemplo de síntesis de voz con gTTS en Streamlit."
+
+# Fila de encabezado: título del campo + botón a la derecha
+hdr_l, hdr_r = st.columns([3, 1])
+with hdr_l:
+    st.markdown("**Ingresa el texto**")
+with hdr_r:
+    use_sample = st.button("Usar texto de ejemplo", use_container_width=True)
+
+# Textarea con etiqueta colapsada para no duplicar el título
+text = st.text_area(
+    label="Ingresa el texto",
+    value=(default if use_sample else ""),
+    height=180,
+    placeholder=default,
+    label_visibility="collapsed",
+)
+
+st.caption(f"Caracteres: {len(text)}")
+
+# Botón principal a todo el ancho, misma altura por CSS
+convert = st.button("Convertir a MP3", type="primary", use_container_width=True)
+
 
     if convert:
         if not text or not text.strip():
