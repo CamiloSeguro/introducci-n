@@ -1,144 +1,62 @@
-import os
-import glob
-import time
-from datetime import datetime
-
 import streamlit as st
-from gtts import gTTS
 from PIL import Image
 
-# ─────────────────────────── Config ─────────────────────────── #
-st.set_page_config(page_title="Interfases Multimodales: Texto → Audio", page_icon="🎧", layout="wide")
+st.title(" Mi Primera App!!")
 
-# Estilos
-st.markdown("""
-<style>
-.block-container { max-width: 1100px; margin: 0 auto; }
+st.header("En este espacio comienzo a desarrollar mis aplicaciones para interfaces multimodales.")
+st.write("Facilmente puedo realizar backend y frontend.")
+image = Image.open('Interfaces Mult2.png')
 
-.stButton > button {
-  height: 44px !important;
-  padding: 0 16px !important;
-  border-radius: 10px !important;
-}
+st.image(image, caption='Interfaces multimodales')
 
-.stTextArea textarea { border-radius: 12px; }
-</style>
-""", unsafe_allow_html=True)
 
-# ─────────────────────────── Header ─────────────────────────── #
-c1, c2 = st.columns([1, 2])
-with c1:
-    if os.path.exists("imagen.jpg"):
-        st.image(Image.open("imagen.jpg"), width=200, caption="Interfases Multimodales")
-with c2:
-    st.title("Interfases Multimodales · Texto → Audio")
-    st.markdown("Las interfaces **texto a audio** favorecen accesibilidad (usuarios con baja visión), manos libres y casos donde leer no es posible.")
+texto = st.text_input('Escribe algo', 'Este es mi texto')
+st.write('El texto escrito es', texto)
 
-# ─────────────────────────── Sidebar ─────────────────────────── #
-with st.sidebar:
-    st.header("Ajustes")
+st.subheader("Ahora usemos 2 Columnas")
 
-    LANG_MAP = {
-        "Español": "es",
-        "Inglés": "en",
-        "Portugués": "pt",
-        "Francés": "fr",
-        "Italiano": "it",
-        "Alemán": "de",
-        "Japonés": "ja",
-    }
-    lang_label = st.selectbox("Idioma del audio (TTS)", list(LANG_MAP.keys()), index=0)
-    lang_code = LANG_MAP[lang_label]
+col1, col2 = st.columns(2)
 
-    TLD_MAP = {
-        "Default": "com",
-        "Estados Unidos": "com",
-        "Reino Unido": "co.uk",
-        "India": "co.in",
-        "Canadá": "ca",
-        "Australia": "com.au",
-        "Irlanda": "ie",
-        "Sudáfrica": "co.za",
-    }
-    tld_label = st.selectbox("Acento (TLD)", list(TLD_MAP.keys()), index=0)
-    tld = TLD_MAP[tld_label]
+with col1:
+    st.subheader("Esta es la primera columna")
+    st.write("Las interfaces multimodales mejoran la experiencia de usuario")
+    resp = st.checkbox('Estoy de acuerdo')
+    if resp:
+       st.write('Correcto!')
+  
+with col2:
+    st.subheader("Esta es la segunda columna")
+    modo = st.radio("Que Modalidad es la principal en tu interfaz", ('Visual', 'auditiva', 'Táctil'))
+    if modo == 'Visual':
+       st.write('La vista es fundamental para tu interfaz')
+    if modo == 'auditiva':
+       st.write('La audición es fundamental para tu interfaz')
+    if modo == 'Táctil':
+       st.write('El tacto es fundamental para tu interfaz')
+        
+st.subheader("Uso de Botones")
+if st.button('Presiona el botón'):
+    st.write('Gracias por presionar')
+else:
+    st.write('No has presionado aún')
 
-    slow = st.toggle("Voz lenta", value=False)
-
-# ─────────────────────────── Utils ─────────────────────────── #
-TEMP_DIR = "temp"
-os.makedirs(TEMP_DIR, exist_ok=True)
-
-def remove_old_files(days: int = 7):
-    now = time.time()
-    for f in glob.glob(os.path.join(TEMP_DIR, "*.mp3")):
-        try:
-            if os.stat(f).st_mtime < now - days * 86400:
-                os.remove(f)
-        except Exception:
-            pass
-
-remove_old_files()
-
-def safe_stub(text: str, max_len: int = 36) -> str:
-    if not text.strip():
-        return "audio"
-    stub = "".join(c for c in text.strip().split("\n")[0] if c.isalnum() or c in (" ", "-", "_")).strip()
-    if not stub:
-        stub = "audio"
-    return stub[:max_len].replace(" ", "_")
-
-def text_to_speech(text: str, lang: str, tld: str, slow: bool) -> str:
-    tts = gTTS(text=text, lang=lang, tld=tld, slow=slow)
-    filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{safe_stub(text)}.mp3"
-    path = os.path.join(TEMP_DIR, filename)
-    tts.save(path)
-    return path
-
-# ─────────────────────────── Form principal ─────────────────────────── #
-st.subheader("Texto a audio")
-
-default = "Hola, este es un ejemplo de síntesis de voz con gTTS en Streamlit."
-
-# Fila de título + botón ejemplo a la derecha
-hdr_l, hdr_r = st.columns([3, 1])
-with hdr_l:
-    st.markdown("**Ingresa el texto**")
-with hdr_r:
-    use_sample = st.button("Usar texto de ejemplo", use_container_width=True)
-
-text = st.text_area(
-    label="Ingresa el texto",
-    value=(default if use_sample else ""),
-    height=180,
-    placeholder=default,
-    label_visibility="collapsed",
+st.subheader("Selectbox")
+in_mod = st.selectbox(
+    "Selecciona la modalidad",
+    ("Audio", "Visual", "Háptico"),
 )
+if in_mod == "Audio":
+    set_mod = "Reproducir audio"
+elif in_mod == "Visual":
+    set_mod = "Reproducir video"
+elif in_mod == "Háptico":
+    set_mod = "Activar vibración"
+st.write(" La acción es:" , set_mod)
 
-st.caption(f"Caracteres: {len(text)}")
 
-# Botón principal centrado y simétrico
-convert = st.button("Convertir a MP3", type="primary", use_container_width=True)
-
-if convert:
-    if not text or not text.strip():
-        st.error("Escribe algún texto antes de convertir.")
-    elif len(text) > 5000:
-        st.error("El texto es muy largo (máx. 5000 caracteres para gTTS).")
-    else:
-        with st.spinner("Generando audio..."):
-            try:
-                mp3_path = text_to_speech(text.strip(), lang_code, tld, slow)
-                with open(mp3_path, "rb") as f:
-                    audio_bytes = f.read()
-                st.success("¡Listo! Aquí está tu audio:")
-                st.audio(audio_bytes, format="audio/mp3")
-                st.download_button(
-                    "Descargar MP3",
-                    data=audio_bytes,
-                    file_name=os.path.basename(mp3_path),
-                    mime="audio/mpeg",
-                    use_container_width=True,
-                )
-            except Exception as e:
-                st.error(f"Error al generar el audio: {e}")
+with st.sidebar:
+    st.subheader("Configura la modalidad")
+    mod_radio = st.radio(
+        "Escoge la modalidad a usar",
+        ("Visual", "Auditiva","Háptica")
+    )
